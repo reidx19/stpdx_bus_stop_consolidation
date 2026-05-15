@@ -1,0 +1,7 @@
+name: bus_stop_consolidation
+channels:
+  - conda-forge
+dependencies:
+  - geopandas
+  - ipykernel
+  - pyprojroot

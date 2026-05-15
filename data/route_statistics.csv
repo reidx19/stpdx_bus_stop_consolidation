@@ -1,0 +1,141 @@
+rte,dir,rte_desc,public_rte,frequent,type,total_num_stops,mean_num_stops,max_num_stops,min_num_stops
+75,0,Cesar Chavez/Lombard,75,True,BUS,61,4.357142857142857,6,4
+72,1,Killingsworth/82nd Ave,72,False,BUS,60,4.615384615384615,8,3
+72,1,Killingsworth/82nd Ave,72,True,BUS,60,4.615384615384615,8,3
+72,0,Killingsworth/82nd Ave,72,False,BUS,57,4.384615384615385,8,3
+72,0,Killingsworth/82nd Ave,72,True,BUS,57,4.384615384615385,8,3
+32,0,Oatfield,32,False,BUS,56,5.6,10,3
+32,1,Oatfield,32,False,BUS,55,5.5,8,4
+45,0,Garden Home,45,False,BUS,54,7.714285714285714,13,3
+51,0,Vista/Sunset Blvd,51,False,BUS,52,7.428571428571429,13,4
+75,1,Cesar Chavez/Lombard,75,True,BUS,52,4.0,6,2
+51,0,Vista/Sunset Blvd,51,True,BUS,52,7.428571428571429,13,4
+15,0,Belmont/NW 23rd,15,True,BUS,50,5.555555555555555,12,3
+15,0,Belmont/NW 23rd,15,False,BUS,50,5.555555555555555,12,3
+15,1,Belmont/NW 23rd,15,False,BUS,49,5.444444444444445,10,2
+15,1,Belmont/NW 23rd,15,True,BUS,49,5.444444444444445,10,2
+17,1,Holgate/Broadway,17,True,BUS,46,4.6,10,2
+17,1,Holgate/Broadway,17,False,BUS,46,4.6,10,2
+20,0,Burnside/Stark,20,True,BUS,45,4.090909090909091,8,3
+20,0,Burnside/Stark,20,False,BUS,45,4.090909090909091,8,3
+51,1,Vista/Sunset Blvd,51,False,BUS,45,6.428571428571429,11,4
+17,0,Holgate/Broadway,17,True,BUS,44,4.888888888888889,8,4
+17,0,Holgate/Broadway,17,False,BUS,44,4.888888888888889,8,4
+20,1,Burnside/Stark,20,True,BUS,42,4.666666666666667,8,3
+70,0,12th/NE 33rd Ave,70,False,BUS,41,3.727272727272727,5,2
+43,1,Taylors Ferry/Marquam Hill,43,False,BUS,40,6.666666666666667,12,5
+10,0,Harold St,10,False,BUS,38,4.75,8,4
+33,1,McLoughlin/King Rd,33,True,BUS,38,4.75,8,4
+33,0,McLoughlin/King Rd,33,True,BUS,38,4.75,10,4
+1,0,Vermont,1,False,BUS,37,3.3636363636363638,7,2
+35,0,Macadam/Greeley,35,False,BUS,37,3.7,5,3
+45,1,Garden Home,45,False,BUS,37,7.4,12,4
+10,1,Harold St,10,False,BUS,37,4.625,8,3
+4,0,Fessenden,4,True,BUS,36,5.142857142857143,8,3
+55,1,Hamilton,55,False,BUS,35,7.0,12,4
+76,1,Hall/Greenburg,76,False,BUS,35,3.888888888888889,6,2
+76,1,Hall/Greenburg,76,True,BUS,35,3.888888888888889,6,2
+55,0,Hamilton,55,False,BUS,34,6.8,12,3
+55,0,Hamilton,55,True,BUS,34,6.8,12,3
+1,1,Vermont,1,False,BUS,33,3.6666666666666665,6,2
+19,0,Woodstock/Glisan,19,False,BUS,33,4.125,8,2
+19,1,Woodstock/Glisan,19,False,BUS,33,4.125,8,2
+34,0,Linwood/River Rd,34,False,BUS,32,4.571428571428571,8,3
+70,1,12th/NE 33rd Ave,70,False,BUS,32,4.0,6,3
+43,0,Taylors Ferry/Marquam Hill,43,False,BUS,31,7.75,12,4
+22,1,Parkrose,22,False,BUS,31,3.875,7,2
+34,1,Linwood/River Rd,34,False,BUS,29,4.142857142857143,6,3
+76,0,Hall/Greenburg,76,False,BUS,29,4.142857142857143,8,3
+76,0,Hall/Greenburg,76,True,BUS,29,4.142857142857143,8,3
+4,1,Fessenden,4,True,BUS,28,5.6,8,4
+6,0,Martin Luther King Jr Blvd,6,False,BUS,27,3.857142857142857,5,3
+30,1,Estacada,30,False,BUS,27,3.857142857142857,5,3
+6,0,Martin Luther King Jr Blvd,6,True,BUS,27,3.857142857142857,5,3
+6,1,Martin Luther King Jr Blvd,6,False,BUS,27,3.857142857142857,5,2
+6,1,Martin Luther King Jr Blvd,6,True,BUS,27,3.857142857142857,5,2
+12,0,Barbur/Sandy Blvd,12,True,BUS,23,3.8333333333333335,4,3
+9,0,Powell Blvd,9,True,BUS,23,4.6,6,3
+12,0,Barbur/Sandy Blvd,12,False,BUS,23,3.8333333333333335,4,3
+77,0,Broadway/Halsey,77,False,BUS,22,5.5,9,4
+88,1,Hart/198th,88,False,BUS,22,4.4,6,3
+12,1,Barbur/Sandy Blvd,12,True,BUS,20,5.0,6,4
+35,1,Macadam/Greeley,35,False,BUS,19,4.75,6,4
+22,0,Parkrose,22,False,BUS,19,3.8,4,3
+29,0,Lake/Webster Rd,29,False,BUS,19,4.75,6,4
+38,1,Boones Ferry Rd,38,False,BUS,19,4.75,6,4
+77,1,Broadway/Halsey,77,False,BUS,19,3.8,4,3
+8,1,Jackson Park/NE 15th,8,True,BUS,18,4.5,6,4
+16,0,Front Ave/St Helens Rd,16,False,BUS,17,4.25,7,3
+9,1,Powell Blvd,9,True,BUS,17,4.25,6,3
+14,0,Hawthorne/Foster,14,True,BUS,17,4.25,6,3
+71,0,60th Ave,71,False,BUS,16,4.0,4,4
+94,1,Tigard/Sherwood,94,False,BUS,16,4.0,7,2
+29,1,Lake/Webster Rd,29,False,BUS,16,4.0,4,4
+88,0,Hart/198th,88,False,BUS,16,4.0,4,4
+24,1,Fremont/NW 18th,24,False,BUS,15,5.0,6,4
+38,0,Boones Ferry Rd,38,False,BUS,15,5.0,6,3
+78,0,Denney/Kerr Pkwy,78,False,BUS,15,3.75,5,2
+62,1,Murray Blvd,62,False,BUS,14,3.5,4,3
+8,0,Jackson Park/NE 15th,8,True,BUS,14,4.666666666666667,6,4
+73,0,122nd Ave,73,True,BUS,14,3.5,4,3
+14,1,Hawthorne/Foster,14,False,BUS,13,4.333333333333333,6,3
+14,1,Hawthorne/Foster,14,True,BUS,13,4.333333333333333,6,3
+57,1,TV Hwy/Forest Grove,57,True,BUS,13,3.25,4,2
+52,1,Farmington/185th,52,False,BUS,13,3.25,4,2
+46,0,North Hillsboro,46,False,BUS,13,3.25,4,2
+57,1,TV Hwy/Forest Grove,57,False,BUS,13,3.25,4,2
+78,1,Denney/Kerr Pkwy,78,False,BUS,13,4.333333333333333,6,3
+57,0,TV Hwy/Forest Grove,57,True,BUS,13,2.6,4,2
+48,0,Cornell,48,True,BUS,12,4.0,4,4
+25,1,Glisan/Troutdale Rd,25,False,BUS,12,4.0,4,4
+82,1,South Gresham,82,False,BUS,12,4.0,4,4
+46,1,North Hillsboro,46,False,BUS,12,4.0,4,4
+48,1,Cornell,48,True,BUS,12,4.0,4,4
+71,1,60th Ave,71,False,BUS,12,4.0,4,4
+48,0,Cornell,48,False,BUS,12,4.0,4,4
+23,1,San Rafael,23,False,BUS,12,4.0,4,4
+73,1,122nd Ave,73,True,BUS,11,3.6666666666666665,4,3
+30,0,Estacada,30,False,BUS,11,3.6666666666666665,4,3
+56,0,Scholls Ferry/Marquam Hill,56,False,BUS,11,5.5,7,4
+24,0,Fremont/NW 18th,24,False,BUS,11,3.6666666666666665,4,3
+44,1,Capitol Hwy/Mocks Crest,44,False,BUS,10,3.3333333333333335,4,2
+44,0,Capitol Hwy/Mocks Crest,44,False,BUS,10,3.3333333333333335,4,2
+56,1,Scholls Ferry/Marquam Hill,56,False,BUS,9,9.0,9,9
+47,1,Main/Baseline,47,False,BUS,8,4.0,4,4
+96,0,Tualatin/I-5,96,False,BUS,8,4.0,4,4
+79,0,Clackamas/Oregon City,79,False,BUS,8,4.0,4,4
+82,0,South Gresham,82,False,BUS,8,4.0,4,4
+26,1,Thurman/NW 18th,26,False,BUS,8,4.0,4,4
+26,0,Thurman/NW 18th,26,False,BUS,8,4.0,4,4
+58,1,Canyon Rd,58,False,BUS,8,4.0,4,4
+96,1,Tualatin/I-5,96,False,BUS,7,3.5,4,3
+62,0,Murray Blvd,62,False,BUS,7,3.5,4,3
+21,1,Sandy Blvd/223rd,21,False,BUS,7,3.5,4,3
+67,0,Bethany/158th,67,False,BUS,7,3.5,4,3
+31,1,Webster Rd,31,False,BUS,7,3.5,4,3
+23,0,San Rafael,23,False,BUS,7,3.5,4,3
+153,1,Stafford/Salamo,153,False,BUS,6,3.0,4,2
+18,0,Hillside,18,False,BUS,6,6.0,6,6
+156,0,Mather Rd,156,False,BUS,6,3.0,4,2
+156,1,Mather Rd,156,False,BUS,6,6.0,6,6
+47,0,Main/Baseline,47,False,BUS,6,3.0,4,2
+63,1,Washington Park/SW 6th,63,False,BUS,5,2.5,3,2
+31,0,Webster Rd,31,False,BUS,4,4.0,4,4
+37,1,Lake Grove,37,False,BUS,4,4.0,4,4
+58,0,Canyon Rd,58,False,BUS,4,4.0,4,4
+153,0,Stafford/Salamo,153,False,BUS,4,4.0,4,4
+52,0,Farmington/185th,52,False,BUS,4,4.0,4,4
+11,1,Rivergate/Marine Dr,11,False,BUS,4,4.0,4,4
+16,1,Front Ave/St Helens Rd,16,False,BUS,4,4.0,4,4
+67,1,Bethany/158th,67,False,BUS,4,4.0,4,4
+21,0,Sandy Blvd/223rd,21,False,BUS,4,4.0,4,4
+81,1,Kane/257th,81,False,BUS,4,4.0,4,4
+79,1,Clackamas/Oregon City,79,False,BUS,4,4.0,4,4
+86,1,148th Ave,86,False,BUS,3,3.0,3,3
+84,0,Powell Valley/Orient Dr,84,False,BUS,3,3.0,3,3
+74,0,162nd Ave,74,False,BUS,3,3.0,3,3
+53,1,Arctic/Allen,53,False,BUS,3,3.0,3,3
+87,1,Airport Way/181st,87,True,BUS,3,3.0,3,3
+94,0,Tigard/Sherwood,94,False,BUS,2,2.0,2,2
+40,1,Tacoma/Swan Island,40,False,BUS,2,2.0,2,2
+39,1,Arnold Creek/Hillsdale,39,False,BUS,2,2.0,2,2
