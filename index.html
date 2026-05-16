@@ -269,6 +269,11 @@ select, button {
     </label><br>
 
     <label>
+      <input type="checkbox" onchange="toggleLayer('stops-buffered-layer')">
+      Stops (1/16 Mile Buffer)
+    </label><br>
+
+    <label>
       <input type="checkbox" onchange="toggleLayer('transfer-layer')">
       Transfer Points
     </label>
@@ -341,6 +346,7 @@ map.on('load', async () => {
 
   const routes = await fetch('data/routes.geojson').then(r => r.json());
   const stops = await fetch('data/stops.geojson').then(r => r.json());
+  const stopsBuffered = await fetch('data/stops_buffered.geojson').then(r => r.json());
   const tooClose = await fetch('data/stops_within_1_16_mile.geojson').then(r => r.json());
   const transfer = await fetch('data/transfer_points.geojson').then(r => r.json());
 
@@ -348,6 +354,7 @@ map.on('load', async () => {
 
   map.addSource('routes', { type:'geojson', data: routes, generateId: true });
   map.addSource('stops', { type:'geojson', data: stops, generateId: true });
+  map.addSource('stops_buffered', { type:'geojson', data: stopsBuffered, generateId: true });
   map.addSource('too_close', { type:'geojson', data: tooClose, generateId: true });
   map.addSource('transfer', { type:'geojson', data: transfer, generateId: true });
 
@@ -376,22 +383,12 @@ map.on('load', async () => {
   });
 
   map.addLayer({
-    id:'stops-layer',
-    type:'circle',
-    source:'stops',
+    id:'stops-buffered-layer',
+    type:'fill',
+    source:'stops_buffered',
+    layout:{ visibility:'none' },
     paint:{
-      'circle-radius':[
-        'case',
-        ['boolean',['feature-state','hover'],false],
-        6,
-        3
-      ],
-      'circle-color':[
-        'case',
-        ['boolean',['feature-state','hover'],false],
-        'yellow',
-        'gray'
-      ]
+      'fill-color':"grey"
     }
   });
 
@@ -418,6 +415,26 @@ map.on('load', async () => {
     paint:{
       'circle-radius':5,
       'circle-color':'yellow'
+    }
+  });
+
+  map.addLayer({
+    id:'stops-layer',
+    type:'circle',
+    source:'stops',
+    paint:{
+      'circle-radius':[
+        'case',
+        ['boolean',['feature-state','hover'],false],
+        6,
+        3
+      ],
+      'circle-color':[
+        'case',
+        ['boolean',['feature-state','hover'],false],
+        'yellow',
+        'gray'
+      ]
     }
   });
 
@@ -674,6 +691,7 @@ function selectRoute(r, dir) {
 
   map.setFilter('routes-layer', expr);
   map.setFilter('stops-layer', expr);
+  map.setFilter('stops-buffered-layer', expr);
   map.setFilter('too-close-layer', expr);
 }
 

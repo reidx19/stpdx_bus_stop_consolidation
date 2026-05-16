@@ -13,3 +13,11 @@ conda activate bus_stop_consolidation
 ```
 
 Then just the run the `stop_spacing.py` script interactively or as a script to re-create the included geojson/csv files.
+
+## Bugs/Features to Add
+- The buffers aren't looking quite right, there are some stations that should show up that aren't
+- need it to work on smartphone screen
+    - make the panels auto hide when opening
+    - if the "About This Map" and "Layers & Filters" panels overlap then make them smaller
+- styling changes for readability
+- hover doesn't capture points on top of polygons

@@ -23,8 +23,9 @@ routes.sort_values(["rte","dir","frequent"],ascending=[True,True,False],inplace=
 routes = routes[routes[["rte","dir"]].duplicated()==False]
 
 #%%
-buffer_ft = 1/8 * 5280 / 2
-stops.geometry = stops.buffer(buffer_ft)
+tolerance_ft = 5
+buffer_ft = (1/8 * 5280 / 2)
+stops.geometry = stops.buffer(buffer_ft+tolerance_ft)
 
 #%% for each stop, check if it's close to another stop
 # note, only count these if one stop isn't servicing other stops
@@ -94,7 +95,10 @@ exploded_stops = exploded_stops.merge(exploded_stops_w_data,on="index")
 exploded_stops["area_ft"] = exploded_stops.area
 
 # find stops that are too close
-too_close = exploded_stops[exploded_stops["area_ft"] > buffer_ft**2 * math.pi]
+# too_close = exploded_stops[exploded_stops["area_ft"] >= (buffer_ft-tolerance_ft)**2 * math.pi]
+too_close = exploded_stops[exploded_stops["num_stops"]>1]
+
+# get rid of stops with only one stop
 
 # add back in some route information
 route_cols = ["rte","dir","rte_desc","public_rte","frequent","type"]
@@ -133,7 +137,7 @@ route_statistics.to_csv(here()/"data/route_statistics.csv",index=False)
 transfer_points.to_crs("epsg:4326").to_file(here()/"data/transfer_points.geojson")
 too_close.reset_index().to_crs("epsg:4326").to_file(here()/"data/stops_within_1_16_mile.geojson")
 stops_point.to_crs("epsg:4326").to_file(here()/"data/stops.geojson")
-
+stops.to_crs("epsg:4326").to_file(here()/"data/stops_buffered.geojson")
 routes.to_crs("epsg:4326").to_file(here()/"data/routes.geojson")
 
 #%%
