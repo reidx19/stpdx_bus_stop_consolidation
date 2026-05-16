@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Transit Map</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<link href="https://unpkg.com/maplibre-gl@5.3.0/dist/maplibre-gl.css" rel="stylesheet"/>
+<script src="https://unpkg.com/maplibre-gl@5.3.0/dist/maplibre-gl.js"></script>
+
+<style>
+body { margin: 0; font-family: sans-serif; }
+
+#map {
+  position: absolute;
+  top: 0;
+  bottom: 35%;
+  width: 100%;
+}
+
+#tablePanel {
+  position: absolute;
+  bottom: 0;
+  height: 35%;
+  width: 100%;
+  background: white;
+  border-top: 1px solid #ccc;
+  overflow: auto;
+  transition: height 0.3s;
+}
+
+#tablePanel.collapsed {
+  height: 40px;
+}
+
+#toggleTable {
+  position: absolute;
+  right: 10px;
+  top: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  background: #eee;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+th {
+  position: sticky;
+  top: 0;
+  background: #f5f5f5;
+  cursor: pointer;
+  padding: 6px;
+  border-bottom: 1px solid #ccc;
+}
+
+td {
+  padding: 5px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+
+tr:hover {
+  background: #f0f0f0;
+}
+
+.panel {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  background: white;
+  padding: 10px;
+  border-radius: 8px;
+  width: 260px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+select, button {
+  width: 100%;
+  margin-bottom: 6px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="map"></div>
+
+<div class="panel">
+<h2>Bus Stop Consolidation</h2>
+
+<label><input type="checkbox" checked onchange="toggleLayer('routes-layer')"> Routes</label><br>
+<label><input type="checkbox" checked onchange="toggleLayer('stops-layer')"> Stops</label><br>
+<label><input type="checkbox" checked onchange="toggleLayer('too-close-layer')"> Candidate Stops</label><br>
+<label><input type="checkbox" onchange="toggleLayer('transfer-layer')"> Transfer Points</label>
+
+<hr>
+
+<p style="font-size:12px;color:#666;">
+Hover features to highlight them in yellow. Click table rows to filter routes.
+</p>
+
+<button onclick="clearFilters()" style="width:100%;margin-top:8px;">
+  Clear Filter
+</button>
+
+</div>
+
+<div id="tablePanel">
+  <div id="toggleTable" onclick="toggleTable()">Collapse</div>
+  <div id="routeTable"></div>
+</div>
+
+<script>
+
+// ----------------------------
+// MAP INIT
+// ----------------------------
+
+const map = new maplibregl.Map({
+  container: 'map',
+  style: {
+    version: 8,
+    sources: {
+      carto: {
+        type: "raster",
+        tiles: [
+          "https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+          "https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+          "https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png",
+          "https://d.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png"
+        ],
+        tileSize: 256
+      }
+    },
+    layers: [{ id:'base', type:'raster', source:'carto' }]
+  },
+  center: [-122.6591, 45.4938],
+  zoom: 10
+});
+
+map.addControl(new maplibregl.NavigationControl());
+
+// ----------------------------
+// STATE
+// ----------------------------
+
+let routesData = [];
+let routesCache = [];
+let sortAsc = true;
+
+// ----------------------------
+// LOAD DATA
+// ----------------------------
+
+map.on('load', async () => {
+
+  const routes = await fetch('data/routes.geojson').then(r => r.json());
+  const stops = await fetch('data/stops.geojson').then(r => r.json());
+  const tooClose = await fetch('data/stops_within_1_16_mile.geojson').then(r => r.json());
+  const transfer = await fetch('data/transfer_points.geojson').then(r => r.json());
+
+  routesData = routes;
+
+  map.addSource('routes', { type:'geojson', data: routes, generateId: true });
+  map.addSource('stops', { type:'geojson', data: stops, generateId: true });
+  map.addSource('too_close', { type:'geojson', data: tooClose, generateId: true });
+  map.addSource('transfer', { type:'geojson', data: transfer, generateId: true });
+
+  // ----------------------------
+  // LAYERS
+  // ----------------------------
+
+  map.addLayer({
+    id:'routes-layer',
+    type:'line',
+    source:'routes',
+    paint:{
+      'line-color':[
+        'case',
+        ['boolean',['feature-state','hover'],false],
+        'yellow',
+        'black'
+      ],
+      'line-width':[
+        'case',
+        ['boolean',['feature-state','hover'],false],
+        8,
+        2
+      ]
+    }
+  });
+
+  map.addLayer({
+    id:'stops-layer',
+    type:'circle',
+    source:'stops',
+    paint:{
+      'circle-radius':[
+        'case',
+        ['boolean',['feature-state','hover'],false],
+        6,
+        3
+      ],
+      'circle-color':[
+        'case',
+        ['boolean',['feature-state','hover'],false],
+        'yellow',
+        'gray'
+      ]
+    }
+  });
+
+  map.addLayer({
+    id:'too-close-layer',
+    type:'fill',
+    source:'too_close',
+    paint:{
+      'fill-color':[
+        'case',
+        ['boolean',['feature-state','hover'],false],
+        'yellow',
+        'maroon'
+      ],
+      'fill-opacity':0.5
+    }
+  });
+
+  map.addLayer({
+    id:'transfer-layer',
+    type:'circle',
+    source:'transfer',
+    layout:{ visibility:'none' },
+    paint:{
+      'circle-radius':5,
+      'circle-color':'yellow'
+    }
+  });
+
+  // ----------------------------
+  // TABLE
+  // ----------------------------
+
+  buildTable(routes.features);
+
+  // ----------------------------
+  // HOVER SYSTEM
+  // ----------------------------
+
+  const popup = new maplibregl.Popup({
+    closeButton:false,
+    closeOnClick:false
+  });
+
+//   let hoveredFeatureId = null;
+
+const hoverState = {
+  routes: null,
+  stops: null,
+  too_close: null,
+  transfer: null
+};
+
+  function enableHover(layerId, sourceId, key) {
+
+  map.on('mousemove', layerId, (e) => {
+
+    map.getCanvas().style.cursor = 'pointer';
+
+    const f = e.features[0];
+    if (!f) return;
+
+    // popup stays unchanged
+    popup
+      .setLngLat(e.lngLat)
+      .setHTML(arguments[3](f.properties))
+      .addTo(map);
+
+    // clear previous hover for THIS source only
+    if (hoverState[key] !== null) {
+      map.setFeatureState(
+        { source: sourceId, id: hoverState[key] },
+        { hover: false }
+      );
+    }
+
+    hoverState[key] = f.id;
+
+    map.setFeatureState(
+      { source: sourceId, id: f.id },
+      { hover: true }
+    );
+  });
+
+  map.on('mouseleave', layerId, () => {
+
+    map.getCanvas().style.cursor = '';
+    popup.remove();
+
+    if (hoverState[key] !== null) {
+      map.setFeatureState(
+        { source: sourceId, id: hoverState[key] },
+        { hover: false }
+      );
+    }
+
+    hoverState[key] = null;
+  });
+}
+
+  // ----------------------------
+  // FULL POPUP FIELDS RESTORED
+  // ----------------------------
+
+  enableHover('routes-layer','routes','routes', p => `
+    <b>Route ID:</b> ${p.rte}<br>
+    <b>Public Name:</b> ${p.public_rte}<br>
+    <b>Route Description:</b> ${p.rte_desc}<br>
+    <b>Route Direction:</b> ${p.dir}<br>
+    <b>Type:</b> ${p.type}<br>
+    <b>Frequent:</b> ${p.frequent}<br>
+    <b>Total Candidate Stops to Consolidate:</b> ${p.total_num_stops}<br>
+    <b>Mean Candidate Stops to Consolidate:</b> ${p.mean_num_stops}<br>
+    <b>Max Stops to Consolidate:</b> ${p.max_num_stops}<br>
+    <b>Min Stops to Consolidate:</b> ${p.min_num_stops}<br>
+  `);
+
+  enableHover('stops-layer','stops','stops', p => `
+    <b>Stop:</b> ${p.stop_id}<br>
+    <b>Name:</b> ${p.stop_name}<br>
+    <b>Route:</b> ${p.rte}<br>
+    <b>Direction:</b> ${p.dir}<br>
+    <b>Type:</b> ${p.type}<br>
+    <b>Sequence:</b> ${p.stop_seq}<br>
+  `);
+
+  enableHover('too-close-layer','too_close','too_close', p => `
+    <b>Route:</b> ${p.rte}<br>
+    <b>Direction:</b> ${p.dir}<br>
+    <b>Candidate Stops to Consolidate:</b> ${p.stop_ids}<br>
+    <b>Number of Candidate Stops to Consolidate:</b> ${p.num_stops}<br>
+  `);
+
+  enableHover('transfer-layer','transfer','transfer', p => `
+    <b>Stop:</b> ${p.stop_id}<br>
+    <b>Transfer Routes:</b> ${p.routes}<br>
+    <b>Number of Transfer Routes:</b> ${p.num_routes}<br>
+  `);
+
+});
+
+// ----------------------------
+// TABLE SYSTEM
+// ----------------------------
+
+const columnConfig = {
+  rte: { label: "Route ID" },
+  public_rte: { label: "Public Name" },
+  rte_desc: { label: "Description" },
+  dir: { label: "Direction" },
+  type: { label: "Type" },
+  frequent: { label: "Frequent", round: 0 },
+
+  total_num_stops: { label: "Total Candidate Stops to Consolidate", round: 0 },
+  mean_num_stops: { label: "Mean Candidate Stops to Consolidate", round: 1 },
+  max_num_stops: { label: "Max Candidate Stops to Consolidate", round: 0 },
+  min_num_stops: { label: "Min Candidate Stops to Consolidate", round: 0 },
+
+  stop_id: { label: "Stop ID" },
+  stop_name: { label: "Stop Name" },
+  stop_seq: { label: "Sequence", round: 0 },
+
+  // ❌ anything not listed here will be hidden
+};
+function getKeys(features) {
+
+  const set = new Set();
+
+  features.forEach(f => {
+    Object.keys(f.properties || {}).forEach(k => set.add(k));
+  });
+
+  // keep only configured columns
+  return [...set].filter(k => columnConfig[k]);
+}
+
+function formatValue(key, value) {
+
+  if (value === null || value === undefined) return '';
+
+  const cfg = columnConfig[key];
+
+  if (!cfg) return value;
+
+  if (cfg.round !== undefined && !isNaN(value)) {
+    return Number(value).toFixed(cfg.round);
+  }
+
+  return value;
+}
+
+function safe(v) {
+  if (v === null || v === undefined) return '';
+  if (typeof v === 'object') return JSON.stringify(v);
+  return v;
+}
+
+function buildTable(features) {
+
+  routesCache = features;
+
+  const keys = getKeys(features);
+
+  document.getElementById('routeTable').innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          ${keys.map(k => `
+  <th onclick="sortTable('${k}')">
+    ${columnConfig[k]?.label || k}
+  </th>
+`).join('')}
+        </tr>
+      </thead>
+      <tbody>
+        ${features.map(f => `
+          <tr onclick="selectRoute('${f.properties.rte}', '${f.properties.dir}')">
+            ${keys.map(k => `<td>${formatValue(k, f.properties?.[k])}</td>`).join('')}
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+function sortTable(key) {
+
+  const sorted = [...routesCache].sort((a,b) => {
+
+    const av = a?.properties?.[key] ?? '';
+    const bv = b?.properties?.[key] ?? '';
+
+    const an = parseFloat(av);
+    const bn = parseFloat(bv);
+
+    const bothNum = !isNaN(an) && !isNaN(bn);
+
+    let res = bothNum
+      ? an - bn
+      : String(av).localeCompare(String(bv));
+
+    return sortAsc ? res : -res;
+  });
+
+  sortAsc = !sortAsc;
+  buildTable(sorted);
+}
+
+// ----------------------------
+// TABLE → MAP FILTER
+// ----------------------------
+
+function selectRoute(r, dir) {
+
+  console.log("Filtering by:", { r, dir });
+
+  const expr = [
+    'all',
+    ['==', ['to-string', ['get','rte']], String(r)],
+    ['==', ['to-string', ['get','dir']], String(dir)]
+  ];
+
+  map.setFilter('routes-layer', expr);
+  map.setFilter('stops-layer', expr);
+  map.setFilter('too-close-layer', expr);
+}
+
+// ----------------------------
+// LAYER TOGGLE
+// ----------------------------
+
+function toggleLayer(id) {
+  const vis = map.getLayoutProperty(id,'visibility');
+  map.setLayoutProperty(id,'visibility',
+    vis === 'none' ? 'visible' : 'none'
+  );
+}
+
+// ----------------------------
+// TABLE TOGGLE
+// ----------------------------
+
+function toggleTable() {
+  document.getElementById('tablePanel')
+    .classList.toggle('collapsed');
+}
+
+
+function clearFilters() {
+
+  console.log("Clearing filters");
+
+  map.setFilter('routes-layer', null);
+  map.setFilter('stops-layer', null);
+  map.setFilter('too-close-layer', null);
+
+  // reset dropdown if it exists
+  const sel = document.getElementById('routeSelect');
+  if (sel) sel.value = '';
+
+  // clear hover states safely
+  if (hoverState) {
+    Object.keys(hoverState).forEach(k => {
+      if (hoverState[k] !== null) {
+        map.setFeatureState(
+          { source: k, id: hoverState[k] },
+          { hover: false }
+        );
+        hoverState[k] = null;
+      }
+    });
+  }
+
+  console.log("Filters cleared");
+}
+
+</script>
+
+</body>
+</html>

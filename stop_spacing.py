@@ -1,5 +1,6 @@
 #%%
 import geopandas as gpd
+import folium
 from pathlib import Path
 import math
 from pyprojroot import here
@@ -19,7 +20,18 @@ buffer_ft = 1/8 * 5280 / 2
 stops.geometry = stops.buffer(buffer_ft)
 
 #%% for each stop, check if it's close to another stop
-transfer_points = gpd.overlay(stops_point[["rte","stop_id","geometry"]].drop_duplicates(),stops[["rte","geometry"]])
+# note, only count these if one stop isn't servicing other stops
+
+stops_with_multiple_routes = stops.groupby("stop_id").agg(
+    routes=("rte","unique"),
+    num_routes=("rte","nunique")
+    )
+stops_with_multiple_routes = stops_with_multiple_routes[stops_with_multiple_routes["num_routes"]>1]
+
+transfer_points = gpd.overlay(
+    stops_point[["rte","stop_id","geometry"]].drop_duplicates(),
+    stops[["rte","geometry"]]
+    )
 transfer_points = transfer_points.dissolve(
     by="stop_id",
     aggfunc={
@@ -29,8 +41,17 @@ transfer_points = transfer_points.dissolve(
 transfer_points.columns = [x[1] if isinstance(x,tuple) else x for x in transfer_points.columns]
 transfer_points.reset_index(inplace=True)
 
-# transfer points have to have more than one route
-transfer_points = transfer_points[transfer_points["num_routes"]>1]
+transfer_points = transfer_points.merge(stops_with_multiple_routes,on="stop_id",suffixes=(None,"_stop"))
+
+#%% transfer points have to service routes that aren't already attached to the route
+cond1 = transfer_points.apply(
+    lambda row: len(
+        set(row["routes"].tolist()) - set(row["routes_stop"].tolist())
+        ) > 0,
+    axis=1
+)
+cond2 = transfer_points["num_routes"]>1
+transfer_points = transfer_points[cond1 & cond2]
 
 #%% dissolve by route id and direction, then explode and
 # only keep stops with area greater than the original buffer
@@ -73,6 +94,9 @@ route_statistics = too_close.groupby(route_cols).agg(
     min_num_stops = ("num_stops","min")
 ).reset_index().sort_values("total_num_stops",ascending=False)
 
+# add to the routes
+routes = routes.merge(route_statistics[["rte","dir","total_num_stops","mean_num_stops","max_num_stops","min_num_stops"]],on=["rte","dir"])
+
 # %% exports
 route_statistics.to_csv(here()/"data/route_statistics.csv",index=False)
 transfer_points.to_crs("epsg:4326").to_file(here()/"data/transfer_points.geojson")
@@ -80,5 +104,9 @@ too_close.reset_index().to_crs("epsg:4326").to_file(here()/"data/stops_within_1_
 stops_point.to_crs("epsg:4326").to_file(here()/"data/stops.geojson")
 
 routes.to_crs("epsg:4326").to_file(here()/"data/routes.geojson")
+
+#%%
+center = stops_point.to_crs("epsg:4326").union_all().centroid
+(center.x,center.y)
 
 #%%
