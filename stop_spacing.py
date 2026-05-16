@@ -69,7 +69,19 @@ dissolved_stops = stops[stops["stop_id"].isin(transfer_points["stop_id"])==False
 exploded_stops = dissolved_stops.explode().reset_index().reset_index()
     
 # intersect with the stops to add that info in
-exploded_stops_w_data = gpd.overlay(stops_point[["stop_id","geometry"]],exploded_stops,how="intersection")
+exploded_stops_w_data = gpd.overlay(
+    stops_point[["stop_id","rte","dir","geometry"]],
+    exploded_stops,
+    how="intersection"
+)
+
+# remove stops that don't match the route id and direction
+exploded_stops_w_data = exploded_stops_w_data[
+    (exploded_stops_w_data["rte_1"]==exploded_stops_w_data["rte_2"]) &
+    (exploded_stops_w_data["dir_1"]==exploded_stops_w_data["dir_2"])
+    ]
+
+#%%
 
 # group it then merge back to exploded stops
 exploded_stops_w_data = exploded_stops_w_data.groupby(["index"]).agg(
@@ -94,7 +106,6 @@ time_save_sec = 45
 too_close["time_savings_sec"] = too_close["stops_to_remove"] * time_save_sec
 
 #%% save how much time when removing bus stop
-
 
 # get route summary statistics
 route_statistics = too_close.groupby(route_cols).agg(

@@ -513,7 +513,7 @@ const hoverState = {
     <b>Route Direction:</b> ${p.dir}<br>
     <b>Type:</b> ${p.type}<br>
     <b>Frequent:</b> ${p.frequent}<br>
-    <b>Total Candidate Stops to Consolidate:</b> ${p.remove_stops}<br>
+    <b>Total Stops to Consolidate:</b> ${p.remove_stops}<br>
     <b>Maximum Potential Time Savings (minutes):</b> ${p.time_savings_min}<br>
   `);
 
@@ -524,7 +524,7 @@ const hoverState = {
 
 
   enableHover('stops-layer','stops','stops', p => `
-    <b>Stop:</b> ${p.stop_id}<br>
+    <b>Stop ID:</b> ${p.stop_id}<br>
     <b>Name:</b> ${p.stop_name}<br>
     <b>Route:</b> ${p.rte}<br>
     <b>Direction:</b> ${p.dir}<br>
@@ -535,13 +535,14 @@ const hoverState = {
   enableHover('too-close-layer','too_close','too_close', p => `
     <b>Route:</b> ${p.rte}<br>
     <b>Direction:</b> ${p.dir}<br>
-    <b>Candidate Stops to Consolidate:</b> ${p.stop_ids}<br>
-    <b>Number of Candidate Stops to Consolidate:</b> ${p.stops_to_remove}<br>
+    <b>Number of Stops to Consolidate:</b> ${p.stops_to_remove}<br>
     <b>Maximum Potential Time Savings (seconds):</b> ${p.time_savings_sec}<br>
+    <b>Stops IDs:</b> ${p.stop_ids}<br>
+    <b>Number of Stops:</b> ${p.num_stops}<br>
   `);
 
   enableHover('transfer-layer','transfer','transfer', p => `
-    <b>Stop:</b> ${p.stop_id}<br>
+    <b>Stop ID:</b> ${p.stop_id}<br>
     <b>Transfer Routes:</b> ${p.routes}<br>
     <b>Number of Transfer Routes:</b> ${p.num_routes}<br>
   `);
@@ -560,7 +561,7 @@ const columnConfig = {
   type: { label: "Type" },
   frequent: { label: "Frequent", round: 0 },
 
-  remove_stops: { label: "Total Candidate Stops to Consolidate", round: 0 },
+  remove_stops: { label: "Total Stops to Consolidate", round: 0 },
   time_savings_min: { label: "Maximum Potential Time Savings (minutes)", round: 0 },
 
   // mean_num_stops: { label: "Mean Candidate Stops to Consolidate", round: 1 },
