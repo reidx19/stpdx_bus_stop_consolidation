@@ -88,21 +88,30 @@ too_close = exploded_stops[exploded_stops["area_ft"] > buffer_ft**2 * math.pi]
 route_cols = ["rte","dir","rte_desc","public_rte","frequent","type"]
 too_close = too_close.merge(routes[route_cols],on=["rte","dir"])
 
+# these are the number of stops we could remove
+too_close["stops_to_remove"] = (too_close["num_stops"] / 2).apply(math.floor)
+time_save_sec = 45
+too_close["time_savings_sec"] = too_close["stops_to_remove"] * time_save_sec
 
 #%% save how much time when removing bus stop
 
-time_save_sec = 45
 
 # get route summary statistics
 route_statistics = too_close.groupby(route_cols).agg(
+    remove_stops = ("stops_to_remove","sum"),
+    time_savings_sec = ("time_savings_sec","sum"),
     total_num_stops = ("num_stops","sum"),
     mean_num_stops = ("num_stops","mean"),
     max_num_stops = ("num_stops","max"),
     min_num_stops = ("num_stops","min")
 ).reset_index().sort_values("total_num_stops",ascending=False)
 
+# convert to minutes
+route_statistics["time_savings_min"] = (route_statistics["time_savings_sec"] / 60).round(1)
+
 # add to the routes
-routes = routes.merge(route_statistics[["rte","dir","total_num_stops","mean_num_stops","max_num_stops","min_num_stops"]],on=["rte","dir"])
+routes = routes.merge(route_statistics[["rte","dir","remove_stops","time_savings_min","total_num_stops","mean_num_stops","max_num_stops","min_num_stops"]],on=["rte","dir"])
+
 
 #%%
 

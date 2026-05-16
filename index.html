@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8" />
-<title>Transit Map</title>
+<title>ST PDX Bus Stop Consolidation</title>
 
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 
@@ -14,35 +14,47 @@ body { margin: 0; font-family: sans-serif; }
 
 #map {
   position: absolute;
-  top: 0;
-  bottom: 35%;
+  inset: 0;
   width: 100%;
 }
 
 #tablePanel {
   position: absolute;
   bottom: 0;
-  height: 35%;
+  left: 0;
   width: 100%;
+  height: 35%;
+
   background: white;
   border-top: 1px solid #ccc;
-  overflow: auto;
-  transition: height 0.3s;
+
+  z-index: 2;
+
+  transition: height 0.3s ease;
+  overflow: hidden;
 }
 
 #tablePanel.collapsed {
-  height: 40px;
+  height: 38px;
 }
 
-#toggleTable {
-  position: absolute;
-  right: 10px;
-  top: 5px;
+#tableHeader {
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 12px;
+  background: #f3f3f3;
+  border-bottom: 1px solid #ddd;
+
+  font-weight: bold;
   cursor: pointer;
-  font-size: 12px;
-  background: #eee;
-  padding: 3px 8px;
-  border-radius: 4px;
+}
+
+#routeTable {
+  height: calc(100% - 38px);
+  overflow: auto;
 }
 
 table {
@@ -72,14 +84,67 @@ tr:hover {
 
 .panel {
   position: absolute;
+  z-index: 2;
+
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+
+  overflow: hidden;
+}
+
+/* LEFT DESCRIPTION PANEL */
+
+#infoPanel {
   top: 10px;
   left: 10px;
-  z-index: 1;
-  background: white;
+
+  width: 340px;
+  max-height: 70vh;
+
+  display: flex;
+  flex-direction: column;
+}
+
+/* RIGHT CONTROL PANEL */
+
+#controlPanel {
+  top: 10px;
+  right: 60px; /* moved away from map controls */
+
+  width: 220px;
+}
+
+.panel-header {
+  background: #f3f3f3;
+  padding: 8px 10px;
+
+  font-weight: bold;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  cursor: pointer;
+
+  border-bottom: 1px solid #ddd;
+}
+
+.panel-content {
   padding: 10px;
-  border-radius: 8px;
-  width: 260px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+/* makes long descriptions scroll */
+
+.scroll-content {
+  overflow-y: auto;
+  max-height: calc(70vh - 42px);
+}
+
+/* collapse behavior */
+
+.panel.collapsed .panel-content {
+  display: none;
 }
 
 select, button {
@@ -93,29 +158,141 @@ select, button {
 
 <div id="map"></div>
 
-<div class="panel">
-<h2>Bus Stop Consolidation</h2>
+<div class="panel" id="infoPanel">
 
-<label><input type="checkbox" checked onchange="toggleLayer('routes-layer')"> Routes</label><br>
-<label><input type="checkbox" checked onchange="toggleLayer('stops-layer')"> Stops</label><br>
-<label><input type="checkbox" checked onchange="toggleLayer('too-close-layer')"> Candidate Stops</label><br>
-<label><input type="checkbox" onchange="toggleLayer('transfer-layer')"> Transfer Points</label>
+  <div class="panel-header" onclick="togglePanel('infoPanel', 'infoToggle')">
+    <span>About This Map</span>
+    <span id="infoToggle">−</span>
+  </div>
 
-<hr>
+  <div class="panel-content scroll-content">
 
-<p style="font-size:12px;color:#666;">
-Hover features to highlight them in yellow. Click table rows to filter routes.
-</p>
+    <h4>
+      Wider stop spacing for TriMet can save riders time and reduce operating costs.
+    </h4>
+    <p style="font-size:14px;color:#555;line-height:1.5;">
+      Bus stops in many U.S. cities are commonly spaced every 1/8 mile. While this minimizes walking distance, it also increases total travel time because buses stop more frequently.      
+    </p>
+    <p style="font-size:14px;color:#555;line-height:1.5;">
+      Many transit systems internationally use approximately 1/4 mile stop spacing, which speeds up service while only modestly increasing walking distance.
+    </p>
+    <p style="font-size:14px;color:#555;line-height:1.5;">
+      This map identifies groups of bus stops in Portland that may be candidates for consolidation in order to improve transit speed and reliability.
+    </p>
+    <p style="font-size:14px;color:#555;line-height:1.5;">
+        Projected travel time savings are estimated assuming roughly 45 seconds saved per removed stop event.
+    </p>
 
-<button onclick="clearFilters()" style="width:100%;margin-top:8px;">
-  Clear Filter
-</button>
+      
+    </p>
+
+  </div>
 
 </div>
 
+<!-- 
+<div class="panel" id="layerPanel">
+
+  <div class="panel-header" onclick="togglePanel('layerPanel')">
+    <span>Bus Stop Consolidation</span>
+    <span id="layerToggle">−</span>
+  </div>
+
+  <div class="panel-content">
+
+    <p style="font-size:15px;color:#666;">
+      Wider stop spacing for Trimet can saver transit riders time and Trimet money. Bus stops in the United States are typically spaced every 1/8 of a mile. While this means a shorter walk to the bus stop, it also means longer trip times for everyone taking the bus since the bus has to stop more often. This becomes especially noticeable for longer transit trips. Many other countries use 1/4 mile spacing, which reduces travel times when on the bus for the price of a slightly longer walk to the bus stop (1/8 mile or around 3-5 minutes more than before).
+      
+      This map shows groups of bus stops with 1/8 mile spacing that could be consolidated to create 1/4 mile spacing. Projected travel time savings are shown (assuming a 45 second time saving for each bus stop consolidation). Consolidating these stops system wide would reduce the travel time on transit, improving existing riders' experience and making transit a more attractive option to new riders. 
+    </p>
+
+    <label>
+      <input type="checkbox" checked onchange="toggleLayer('routes-layer')">
+      Routes
+    </label><br>
+
+    <label>
+      <input type="checkbox" checked onchange="toggleLayer('stops-layer')">
+      Stops
+    </label><br>
+
+    <label>
+      <input type="checkbox" checked onchange="toggleLayer('too-close-layer')">
+      Candidate Stops
+    </label><br>
+
+    <label>
+      <input type="checkbox" onchange="toggleLayer('transfer-layer')">
+      Transfer Points
+    </label>
+
+    <hr>
+
+    <p style="font-size:12px;color:#666;">
+      Hover over features to see details.
+      Click table rows to focus in on that route.
+    </p>
+
+    <button onclick="clearFilters()">
+      Clear Filter
+    </button>
+
+  </div>
+
+</div> -->
+
+
+
+
+<div class="panel" id="controlPanel">
+
+  <div class="panel-header" onclick="togglePanel('controlPanel', 'controlToggle')">
+    <span>Layers & Filters</span>
+    <span id="controlToggle">−</span>
+  </div>
+
+  <div class="panel-content">
+
+    <label>
+      <input type="checkbox" checked onchange="toggleLayer('routes-layer')">
+      Routes
+    </label><br>
+
+    <label>
+      <input type="checkbox" checked onchange="toggleLayer('stops-layer')">
+      Stops
+    </label><br>
+
+    <label>
+      <input type="checkbox" checked onchange="toggleLayer('too-close-layer')">
+      Candidate Stops
+    </label><br>
+
+    <label>
+      <input type="checkbox" onchange="toggleLayer('transfer-layer')">
+      Transfer Points
+    </label>
+
+    <hr>
+
+    <button onclick="clearFilters()">
+      Clear Filter
+    </button>
+
+  </div>
+
+</div>
+
+
 <div id="tablePanel">
-  <div id="toggleTable" onclick="toggleTable()">Collapse</div>
+
+  <div id="tableHeader" onclick="toggleTable()">
+    <span>Routes Table</span>
+    <span id="tableToggle">▼</span>
+  </div>
+
   <div id="routeTable"></div>
+
 </div>
 
 <script>
@@ -142,8 +319,8 @@ const map = new maplibregl.Map({
     },
     layers: [{ id:'base', type:'raster', source:'carto' }]
   },
-  center: [-122.6591, 45.4938],
-  zoom: 10
+  center: [-122.6591, 45.35],
+  zoom: 9
 });
 
 map.addControl(new maplibregl.NavigationControl());
@@ -248,7 +425,17 @@ map.on('load', async () => {
   // TABLE
   // ----------------------------
 
-  buildTable(routes.features);
+  const defaultSorted = [...routes.features].sort((a, b) => {
+
+  const av = Number(a.properties.time_savings_min || 0);
+  const bv = Number(b.properties.time_savings_min || 0);
+
+  return bv - av; // descending
+});
+
+routesCache = defaultSorted;
+
+buildTable(defaultSorted);
 
   // ----------------------------
   // HOVER SYSTEM
@@ -326,11 +513,15 @@ const hoverState = {
     <b>Route Direction:</b> ${p.dir}<br>
     <b>Type:</b> ${p.type}<br>
     <b>Frequent:</b> ${p.frequent}<br>
-    <b>Total Candidate Stops to Consolidate:</b> ${p.total_num_stops}<br>
-    <b>Mean Candidate Stops to Consolidate:</b> ${p.mean_num_stops}<br>
-    <b>Max Stops to Consolidate:</b> ${p.max_num_stops}<br>
-    <b>Min Stops to Consolidate:</b> ${p.min_num_stops}<br>
+    <b>Total Candidate Stops to Consolidate:</b> ${p.remove_stops}<br>
+    <b>Maximum Potential Time Savings (minutes):</b> ${p.time_savings_min}<br>
   `);
+
+    // <b>Total Candidate Stops to Consolidate:</b> ${p.total_num_stops}<br>
+    // <b>Mean Candidate Stops to Consolidate:</b> ${p.mean_num_stops}<br>
+    // <b>Max Stops to Consolidate:</b> ${p.max_num_stops}<br>
+    // <b>Min Stops to Consolidate:</b> ${p.min_num_stops}<br>
+
 
   enableHover('stops-layer','stops','stops', p => `
     <b>Stop:</b> ${p.stop_id}<br>
@@ -345,7 +536,8 @@ const hoverState = {
     <b>Route:</b> ${p.rte}<br>
     <b>Direction:</b> ${p.dir}<br>
     <b>Candidate Stops to Consolidate:</b> ${p.stop_ids}<br>
-    <b>Number of Candidate Stops to Consolidate:</b> ${p.num_stops}<br>
+    <b>Number of Candidate Stops to Consolidate:</b> ${p.stops_to_remove}<br>
+    <b>Maximum Potential Time Savings (seconds):</b> ${p.time_savings_sec}<br>
   `);
 
   enableHover('transfer-layer','transfer','transfer', p => `
@@ -368,10 +560,12 @@ const columnConfig = {
   type: { label: "Type" },
   frequent: { label: "Frequent", round: 0 },
 
-  total_num_stops: { label: "Total Candidate Stops to Consolidate", round: 0 },
-  mean_num_stops: { label: "Mean Candidate Stops to Consolidate", round: 1 },
-  max_num_stops: { label: "Max Candidate Stops to Consolidate", round: 0 },
-  min_num_stops: { label: "Min Candidate Stops to Consolidate", round: 0 },
+  remove_stops: { label: "Total Candidate Stops to Consolidate", round: 0 },
+  time_savings_min: { label: "Maximum Potential Time Savings (minutes)", round: 0 },
+
+  // mean_num_stops: { label: "Mean Candidate Stops to Consolidate", round: 1 },
+  // max_num_stops: { label: "Max Candidate Stops to Consolidate", round: 0 },
+  // min_num_stops: { label: "Min Candidate Stops to Consolidate", round: 0 },
 
   stop_id: { label: "Stop ID" },
   stop_name: { label: "Stop Name" },
@@ -498,10 +692,33 @@ function toggleLayer(id) {
 // ----------------------------
 
 function toggleTable() {
-  document.getElementById('tablePanel')
-    .classList.toggle('collapsed');
+
+  const panel = document.getElementById('tablePanel');
+  const label = document.getElementById('tableToggle');
+
+  panel.classList.toggle('collapsed');
+
+  label.textContent =
+    panel.classList.contains('collapsed')
+      ? '▲'
+      : '▼';
+
+  setTimeout(() => map.resize(), 310);
 }
 
+function togglePanel(id, iconId) {
+
+  const panel = document.getElementById(id);
+
+  panel.classList.toggle('collapsed');
+
+  const icon = document.getElementById(iconId);
+
+  icon.textContent =
+    panel.classList.contains('collapsed')
+      ? '+'
+      : '−';
+}
 
 function clearFilters() {
 

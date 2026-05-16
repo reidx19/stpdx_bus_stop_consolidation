@@ -11,3 +11,5 @@ conda env create -f environment.yml
 ```
 conda activate bus_stop_consolidation
 ```
+
+Then just the run the `stop_spacing.py` script interactively or as a script to re-create the included geojson/csv files.
