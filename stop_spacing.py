@@ -14,6 +14,13 @@ stops = gpd.read_file(here()/"TriMet_GIS/GIS_Data.gdb",layer="trimet_stops_20260
 stops_point = stops.copy()
 
 routes = gpd.read_file("TriMet_GIS/GIS_Data.gdb",layer="trimet_routes_202605")
+# rail_routes = gpd.read_file("TriMet_GIS/GIS_Data.gdb",layer="trimet_rail_routes_202605")
+
+# consolidate routes
+# routes = routes.groupby(["rte","dir"])
+routes.drop(columns=["Shape_Length"],inplace=True)
+routes.sort_values(["rte","dir","frequent"],ascending=[True,True,False],inplace=True)
+routes = routes[routes[["rte","dir"]].duplicated()==False]
 
 #%%
 buffer_ft = 1/8 * 5280 / 2
@@ -96,6 +103,10 @@ route_statistics = too_close.groupby(route_cols).agg(
 
 # add to the routes
 routes = routes.merge(route_statistics[["rte","dir","total_num_stops","mean_num_stops","max_num_stops","min_num_stops"]],on=["rte","dir"])
+
+#%%
+
+# stops_point = stops_point[stops["type"]=="BUS"]
 
 # %% exports
 route_statistics.to_csv(here()/"data/route_statistics.csv",index=False)
