@@ -158,7 +158,7 @@ select, button {
 
 <div id="map"></div>
 
-<div class="panel" id="infoPanel">
+<div class="panel collapsed" id="infoPanel">
 
   <div class="panel-header" onclick="togglePanel('infoPanel', 'infoToggle')">
     <span>About This Map</span>
@@ -190,59 +190,6 @@ select, button {
 
 </div>
 
-<!-- 
-<div class="panel" id="layerPanel">
-
-  <div class="panel-header" onclick="togglePanel('layerPanel')">
-    <span>Bus Stop Consolidation</span>
-    <span id="layerToggle">−</span>
-  </div>
-
-  <div class="panel-content">
-
-    <p style="font-size:15px;color:#666;">
-      Wider stop spacing for Trimet can saver transit riders time and Trimet money. Bus stops in the United States are typically spaced every 1/8 of a mile. While this means a shorter walk to the bus stop, it also means longer trip times for everyone taking the bus since the bus has to stop more often. This becomes especially noticeable for longer transit trips. Many other countries use 1/4 mile spacing, which reduces travel times when on the bus for the price of a slightly longer walk to the bus stop (1/8 mile or around 3-5 minutes more than before).
-      
-      This map shows groups of bus stops with 1/8 mile spacing that could be consolidated to create 1/4 mile spacing. Projected travel time savings are shown (assuming a 45 second time saving for each bus stop consolidation). Consolidating these stops system wide would reduce the travel time on transit, improving existing riders' experience and making transit a more attractive option to new riders. 
-    </p>
-
-    <label>
-      <input type="checkbox" checked onchange="toggleLayer('routes-layer')">
-      Routes
-    </label><br>
-
-    <label>
-      <input type="checkbox" checked onchange="toggleLayer('stops-layer')">
-      Stops
-    </label><br>
-
-    <label>
-      <input type="checkbox" checked onchange="toggleLayer('too-close-layer')">
-      Candidate Stops
-    </label><br>
-
-    <label>
-      <input type="checkbox" onchange="toggleLayer('transfer-layer')">
-      Transfer Points
-    </label>
-
-    <hr>
-
-    <p style="font-size:12px;color:#666;">
-      Hover over features to see details.
-      Click table rows to focus in on that route.
-    </p>
-
-    <button onclick="clearFilters()">
-      Clear Filter
-    </button>
-
-  </div>
-
-</div> -->
-
-
-
 
 <div class="panel" id="controlPanel">
 
@@ -261,6 +208,16 @@ select, button {
     <label>
       <input type="checkbox" checked onchange="toggleLayer('stops-layer')">
       Stops
+    </label><br>
+
+    <label>
+      <input type="checkbox" onchange="toggleLayer('stops-total-layer')">
+      Stops (Boarding/Alighting Totals)
+    </label><br>
+
+    <label>
+      <input type="checkbox" onchange="toggleLayer('stops-accessible-layer')">
+      Stops (Accessible Path)
     </label><br>
 
     <label>
@@ -289,7 +246,7 @@ select, button {
 </div>
 
 
-<div id="tablePanel">
+<div id="tablePanel" class="collapsed">
 
   <div id="tableHeader" onclick="toggleTable()">
     <span>Routes Table</span>
@@ -438,6 +395,65 @@ map.on('load', async () => {
     }
   });
 
+  map.addLayer({
+  id: 'stops-total-layer',
+  type: 'circle',
+  source: 'stops',
+  layout: {
+    visibility: 'none'
+  },
+  paint: {
+    'circle-radius': [
+      'case',
+      ['boolean', ['feature-state', 'hover'], false],
+      10,
+      [
+        'interpolate',
+        ['linear'],
+        ['to-number', ['get', 'Total']],
+        0, 2,
+        5, 4,
+        17, 7,
+        50, 10,
+        1600, 40
+      ]
+    ],
+    'circle-color': '#2b83ba',
+    'circle-opacity': 0.8,
+    'circle-stroke-color': 'white',
+    'circle-stroke-width': 1
+  }
+  });
+
+  map.addLayer({
+  id: 'stops-accessible-layer',
+  type: 'circle',
+  source: 'stops',
+  layout: {
+    visibility: 'none'
+  },
+  paint: {
+    'circle-radius': [
+      'case',
+      ['boolean', ['feature-state', 'hover'], false],
+      7,
+      4
+    ],
+    'circle-color': [
+      'case',
+      ['==', ['get', 'accessible_path'], 'yes'],
+      '#1a9641',      // green
+
+      ['==', ['get', 'accessible_path'], 'no'],
+      '#d7191c',      // red
+
+      '#999999'       // unknown
+    ],
+    'circle-stroke-color': 'white',
+    'circle-stroke-width': 1
+  }
+  });
+
   // ----------------------------
   // TABLE
   // ----------------------------
@@ -549,6 +565,18 @@ const hoverState = {
     <b>Sequence:</b> ${p.stop_seq}<br>
   `);
 
+  enableHover('stops-total-layer','stops','stops', p => `
+  <b>Stop ID:</b> ${p.stop_id}<br>
+  <b>Name:</b> ${p.stop_name}<br>
+  <b>Total Boarding:</b> ${p.Total}<br>
+  `);
+
+  enableHover('stops-accessible-layer','stops','stops', p => `
+  <b>Stop ID:</b> ${p.stop_id}<br>
+  <b>Name:</b> ${p.stop_name}<br>
+  <b>Accessible Path Exists:</b> ${p.accessible_path}<br>
+  `);
+
   enableHover('too-close-layer','too_close','too_close', p => `
     <b>Route:</b> ${p.rte}<br>
     <b>Direction:</b> ${p.dir}<br>
@@ -556,6 +584,11 @@ const hoverState = {
     <b>Maximum Potential Time Savings (seconds):</b> ${p.time_savings_sec}<br>
     <b>Stops IDs:</b> ${p.stop_ids}<br>
     <b>Number of Stops:</b> ${p.num_stops}<br>
+    <b>Sidewalk Exists:</b> ${p.sidewalk_exists}<br>
+    <b>Accessible Path Exists:</b> ${p.accessible_path}<br>
+    <b>Ons:</b> ${p.Ons}<br>
+    <b>Offs:</b> ${p.Offs}<br>
+    <b>Total:</b> ${p.Total}<br>
   `);
 
   enableHover('transfer-layer','transfer','transfer', p => `
@@ -691,6 +724,8 @@ function selectRoute(r, dir) {
 
   map.setFilter('routes-layer', expr);
   map.setFilter('stops-layer', expr);
+  map.setFilter('stops-total-layer', expr);
+  map.setFilter('stops-accessible-layer', expr);
   map.setFilter('stops-buffered-layer', expr);
   map.setFilter('too-close-layer', expr);
 }
@@ -745,8 +780,10 @@ function clearFilters() {
 
   map.setFilter('routes-layer', null);
   map.setFilter('stops-layer', null);
+  map.setFilter('stops-total-layer', null);
+  map.setFilter('stops-accessible-layer', null);
   map.setFilter('too-close-layer', null);
-
+  
   // reset dropdown if it exists
   const sel = document.getElementById('routeSelect');
   if (sel) sel.value = '';
