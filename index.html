@@ -162,7 +162,7 @@ select, button {
 
   <div class="panel-header" onclick="togglePanel('infoPanel', 'infoToggle')">
     <span>About This Map</span>
-    <span id="infoToggle">−</span>
+    <span id="infoToggle">+</span>
   </div>
 
   <div class="panel-content scroll-content">
@@ -201,37 +201,32 @@ select, button {
   <div class="panel-content">
 
     <label>
-      <input type="checkbox" checked onchange="toggleLayer('routes-layer')">
+      <input type="checkbox" data-layer="routes-layer" onchange="toggleLayer(this)">
       Routes
     </label><br>
 
     <label>
-      <input type="checkbox" checked onchange="toggleLayer('stops-layer')">
+      <input type="checkbox" data-layer='stops-layer' onchange="toggleLayer(this)">
       Stops
     </label><br>
 
     <label>
-      <input type="checkbox" onchange="toggleLayer('stops-total-layer')">
-      Stops (Boarding/Alighting Totals)
+      <input type="checkbox" data-layer='stops-total-layer' onchange="toggleLayer(this)">
+      Stops with Stats
     </label><br>
 
     <label>
-      <input type="checkbox" onchange="toggleLayer('stops-accessible-layer')">
-      Stops (Accessible Path)
-    </label><br>
-
-    <label>
-      <input type="checkbox" checked onchange="toggleLayer('too-close-layer')">
+      <input type="checkbox" data-layer="too-close-layer" onchange="toggleLayer(this)">
       Candidate Stops
     </label><br>
 
     <label>
-      <input type="checkbox" onchange="toggleLayer('stops-buffered-layer')">
+      <input type="checkbox" data-layer=stops-buffered-layer onchange="toggleLayer(this)">
       Stops (1/16 Mile Buffer)
     </label><br>
 
     <label>
-      <input type="checkbox" onchange="toggleLayer('transfer-layer')">
+      <input type="checkbox" data-layer="transfer-layer" onchange="toggleLayer(this)">
       Transfer Points
     </label>
 
@@ -239,6 +234,10 @@ select, button {
 
     <button onclick="clearFilters()">
       Clear Filter
+    </button>
+
+    <button onclick="toggleLayerAll()">
+      Toggle All
     </button>
 
   </div>
@@ -281,8 +280,8 @@ const map = new maplibregl.Map({
     },
     layers: [{ id:'base', type:'raster', source:'carto' }]
   },
-  center: [-122.6591, 45.35],
-  zoom: 9
+  center: [-122.6591, 45.5],
+  zoom: 10
 });
 
 map.addControl(new maplibregl.NavigationControl());
@@ -343,7 +342,7 @@ map.on('load', async () => {
     id:'stops-buffered-layer',
     type:'fill',
     source:'stops_buffered',
-    layout:{ visibility:'none' },
+    layout:{'visibility':'none'},
     paint:{
       'fill-color':"grey"
     }
@@ -371,7 +370,9 @@ map.on('load', async () => {
     layout:{ visibility:'none' },
     paint:{
       'circle-radius':5,
-      'circle-color':'yellow'
+      'circle-color':'yellow',
+      'circle-stroke-color': "black",
+      'circle-stroke-width': 1
     }
   });
 
@@ -383,14 +384,18 @@ map.on('load', async () => {
       'circle-radius':[
         'case',
         ['boolean',['feature-state','hover'],false],
-        6,
-        3
+        10,
+        5
       ],
-      'circle-color':[
-        'case',
-        ['boolean',['feature-state','hover'],false],
-        'yellow',
-        'gray'
+      'circle-color': [
+      'case',
+      ['==', ['get', 'accessible_path'], 'yes'],
+      '#1a9641',      // green
+
+      ['==', ['get', 'accessible_path'], 'no'],
+      '#ff9100',      // red
+
+      '#999999'       // unknown
       ]
     }
   });
@@ -399,60 +404,37 @@ map.on('load', async () => {
   id: 'stops-total-layer',
   type: 'circle',
   source: 'stops',
-  layout: {
-    visibility: 'none'
-  },
+  layout:{'visibility':'none'},
   paint: {
     'circle-radius': [
       'case',
       ['boolean', ['feature-state', 'hover'], false],
-      10,
+      2,
       [
-        'interpolate',
+      'interpolate',
         ['linear'],
         ['to-number', ['get', 'Total']],
-        0, 2,
-        5, 4,
-        17, 7,
+        0, 5,
         50, 10,
         1600, 40
       ]
     ],
-    'circle-color': '#2b83ba',
+    'circle-color': [
+      'case',
+      ['boolean', ['feature-state', 'hover'], false],
+      '#fff000',
+      ['==', ['get', 'Total'], null],
+      '#999999',
+      '#009e59',
+    ],
     'circle-opacity': 0.8,
     'circle-stroke-color': 'white',
     'circle-stroke-width': 1
   }
   });
 
-  map.addLayer({
-  id: 'stops-accessible-layer',
-  type: 'circle',
-  source: 'stops',
-  layout: {
-    visibility: 'none'
-  },
-  paint: {
-    'circle-radius': [
-      'case',
-      ['boolean', ['feature-state', 'hover'], false],
-      7,
-      4
-    ],
-    'circle-color': [
-      'case',
-      ['==', ['get', 'accessible_path'], 'yes'],
-      '#1a9641',      // green
+  syncCheckboxes();
 
-      ['==', ['get', 'accessible_path'], 'no'],
-      '#d7191c',      // red
-
-      '#999999'       // unknown
-    ],
-    'circle-stroke-color': 'white',
-    'circle-stroke-width': 1
-  }
-  });
 
   // ----------------------------
   // TABLE
@@ -563,18 +545,27 @@ const hoverState = {
     <b>Direction:</b> ${p.dir}<br>
     <b>Type:</b> ${p.type}<br>
     <b>Sequence:</b> ${p.stop_seq}<br>
+    <b>Accessible Path Exists:</b> ${p.accessible_path}<br>
+    <b>Sidewalk Exists:</b> ${p.sidewalk_exists}<br>
+    <b>Accessible Path Exists:</b> ${p.accessible_path}<br>
+    <b>Ons:</b> ${p.Ons}<br>
+    <b>Offs:</b> ${p.Offs}<br>
+    <b>Total:</b> ${p.Total}<br>
   `);
 
   enableHover('stops-total-layer','stops','stops', p => `
-  <b>Stop ID:</b> ${p.stop_id}<br>
-  <b>Name:</b> ${p.stop_name}<br>
-  <b>Total Boarding:</b> ${p.Total}<br>
-  `);
-
-  enableHover('stops-accessible-layer','stops','stops', p => `
-  <b>Stop ID:</b> ${p.stop_id}<br>
-  <b>Name:</b> ${p.stop_name}<br>
-  <b>Accessible Path Exists:</b> ${p.accessible_path}<br>
+    <b>Stop ID:</b> ${p.stop_id}<br>
+    <b>Name:</b> ${p.stop_name}<br>
+    <b>Route:</b> ${p.rte}<br>
+    <b>Direction:</b> ${p.dir}<br>
+    <b>Type:</b> ${p.type}<br>
+    <b>Sequence:</b> ${p.stop_seq}<br>
+    <b>Accessible Path Exists:</b> ${p.accessible_path}<br>
+    <b>Sidewalk Exists:</b> ${p.sidewalk_exists}<br>
+    <b>Accessible Path Exists:</b> ${p.accessible_path}<br>
+    <b>Ons:</b> ${p.Ons}<br>
+    <b>Offs:</b> ${p.Offs}<br>
+    <b>Total:</b> ${p.Total}<br>
   `);
 
   enableHover('too-close-layer','too_close','too_close', p => `
@@ -584,17 +575,14 @@ const hoverState = {
     <b>Maximum Potential Time Savings (seconds):</b> ${p.time_savings_sec}<br>
     <b>Stops IDs:</b> ${p.stop_ids}<br>
     <b>Number of Stops:</b> ${p.num_stops}<br>
-    <b>Sidewalk Exists:</b> ${p.sidewalk_exists}<br>
-    <b>Accessible Path Exists:</b> ${p.accessible_path}<br>
-    <b>Ons:</b> ${p.Ons}<br>
-    <b>Offs:</b> ${p.Offs}<br>
-    <b>Total:</b> ${p.Total}<br>
   `);
 
   enableHover('transfer-layer','transfer','transfer', p => `
     <b>Stop ID:</b> ${p.stop_id}<br>
-    <b>Transfer Routes:</b> ${p.routes}<br>
-    <b>Number of Transfer Routes:</b> ${p.num_routes}<br>
+    <b>Transfer Stops:</b> ${p.stops_to_transfer_to}<br>
+    <b>Transfer Routes:</b> ${p.routes_to_transfer_to}<br>
+    <b>Number of Transfer Stops:</b> ${p.num_stops_to_transfer_to}<br>
+    <b>Number of Transfer Routes:</b> ${p.num_routes_to_transfer_to}<br>
   `);
 
 });
@@ -728,18 +716,48 @@ function selectRoute(r, dir) {
   map.setFilter('stops-accessible-layer', expr);
   map.setFilter('stops-buffered-layer', expr);
   map.setFilter('too-close-layer', expr);
+  map.setFilter('transfer-layer', expr);
 }
 
 // ----------------------------
 // LAYER TOGGLE
 // ----------------------------
 
-function toggleLayer(id) {
-  const vis = map.getLayoutProperty(id,'visibility');
-  map.setLayoutProperty(id,'visibility',
-    vis === 'none' ? 'visible' : 'none'
+function toggleLayer(cb) {
+  map.setLayoutProperty(
+    cb.dataset.layer,
+    'visibility',
+    cb.checked ? 'visible' : 'none'
   );
 }
+
+function toggleLayerAll() {
+  const checkboxes = document.querySelectorAll(
+    '#controlPanel input[type="checkbox"]'
+  );
+
+  const checkAll = [...checkboxes].some(cb => !cb.checked);
+
+  checkboxes.forEach(cb => {
+    cb.checked = checkAll;
+    toggleLayer(cb);
+  });
+}
+
+
+function syncCheckboxes() {
+  document.querySelectorAll('#controlPanel input[data-layer]')
+    .forEach(cb => {
+      const visibility = map.getLayoutProperty(
+        cb.dataset.layer,
+        'visibility'
+      );
+
+      // If 'visibility' is undefined, the layer is visible by default.
+      cb.checked = visibility !== 'none';
+    });
+}
+
 
 // ----------------------------
 // TABLE TOGGLE
@@ -783,6 +801,7 @@ function clearFilters() {
   map.setFilter('stops-total-layer', null);
   map.setFilter('stops-accessible-layer', null);
   map.setFilter('too-close-layer', null);
+  map.setFilter('transfer-layer', null);
   
   // reset dropdown if it exists
   const sel = document.getElementById('routeSelect');

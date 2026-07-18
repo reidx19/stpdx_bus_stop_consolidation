@@ -132,8 +132,8 @@ def compare_set(routes1,routes2):
 transfer_points = (
     transfer_points[transfer_points.apply(lambda row: compare_set(row["routes_1"],row["routes_2"]), axis=1)]
     .groupby("stop_id_1").agg(
-        stops_to_transfer_to = ("stop_id_2", lambda x: list(set(x))),
-        routes_to_transfer_to = ("routes_2", lambda x: list(set(chain.from_iterable(x))))
+        stops_to_transfer_to = ("stop_id_2", lambda x: [int(x) for x in list(set(x))]),
+        routes_to_transfer_to = ("routes_2", lambda x: [int(x) for x in sorted(list(set(chain.from_iterable(x))))])
     )
     .reset_index()
     .rename(columns={"stop_id_1":"stop_id"})
