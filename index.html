@@ -227,7 +227,7 @@ select, button {
 
     <label>
       <input type="checkbox" data-layer="transfer-layer" onchange="toggleLayer(this)">
-      Transfer Points
+      Transfer Stops
     </label>
 
     <hr>
@@ -522,6 +522,7 @@ const hoverState = {
   // ----------------------------
 
   enableHover('routes-layer','routes','routes', p => `
+    <b>Layer:</b> Routes<br>
     <b>Route ID:</b> ${p.rte}<br>
     <b>Public Name:</b> ${p.public_rte}<br>
     <b>Route Description:</b> ${p.rte_desc}<br>
@@ -539,6 +540,7 @@ const hoverState = {
 
 
   enableHover('stops-layer','stops','stops', p => `
+    <b>Layer:</b> Stops<br>
     <b>Stop ID:</b> ${p.stop_id}<br>
     <b>Name:</b> ${p.stop_name}<br>
     <b>Route:</b> ${p.rte}<br>
@@ -554,6 +556,7 @@ const hoverState = {
   `);
 
   enableHover('stops-total-layer','stops','stops', p => `
+    <b>Layer:</b> Stops with Stats<br>
     <b>Stop ID:</b> ${p.stop_id}<br>
     <b>Name:</b> ${p.stop_name}<br>
     <b>Route:</b> ${p.rte}<br>
@@ -569,6 +572,7 @@ const hoverState = {
   `);
 
   enableHover('too-close-layer','too_close','too_close', p => `
+    <b>Layer:</b> Candidate Stops<br>
     <b>Route:</b> ${p.rte}<br>
     <b>Direction:</b> ${p.dir}<br>
     <b>Number of Stops to Consolidate:</b> ${p.stops_to_remove}<br>
@@ -578,6 +582,7 @@ const hoverState = {
   `);
 
   enableHover('transfer-layer','transfer','transfer', p => `
+    <b>Layer:</b> Transfer Stops<br>
     <b>Stop ID:</b> ${p.stop_id}<br>
     <b>Transfer Stops:</b> ${p.stops_to_transfer_to}<br>
     <b>Transfer Routes:</b> ${p.routes_to_transfer_to}<br>
