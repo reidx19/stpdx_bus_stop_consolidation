@@ -15,6 +15,7 @@ gpd.list_layers(here()/"TriMet_GIS/GIS_Data.gdb")
 ##############################################################################
 stops = gpd.read_file(here()/"TriMet_GIS/GIS_Data.gdb",layer="trimet_stops_202605")
 routes = gpd.read_file("TriMet_GIS/GIS_Data.gdb",layer="trimet_routes_202605")
+routes_og = routes.copy()
 
 ##############################################################################
 # Add Supplemental Data
@@ -57,13 +58,15 @@ stops = stops.merge(
 # ----------------------------------------------------------------------------
 # stop boardings/alightings
 
-stop_stats = pd.read_csv(here()/"data/trimet_passenger_census_weekday.csv")
+stop_stats = pd.read_csv(here()/"data/trimet_weekday.csv")
 stops = stops.merge(
     stop_stats[["Location ID","Ons","Offs","Total","Monthly Lifts"]],
     left_on = "stop_id",
     right_on = "Location ID",
     how = 'left'
 )
+
+stops_not_in_stats = stops[stops["stop_id"].isin(stop_stats["Location ID"])==False]
 
 # stop_supplemental_info = stops[["stop_id","sidewalk_exists","accessible_path","Ons","Offs","Total","Monthly Lifts"]]
 
@@ -140,10 +143,9 @@ transfer_points = (
 )
 transfer_points["num_stops_to_transfer_to"] = transfer_points["stops_to_transfer_to"].apply(lambda x: len(x))
 transfer_points["num_routes_to_transfer_to"] = transfer_points["routes_to_transfer_to"].apply(lambda x: len(x))
-transfer_points = stops_point.merge(transfer_points)
-
-transfer_points.to_file(Path.home()/"Downloads/test.geojson")
-transfer_buffer.to_file(Path.home()/"Downloads/test2.geojson")
+transfer_points["is_transfer"] = True
+stops_point = stops_point.merge(transfer_points,on='stop_id',how='left')
+stops_point["is_transfer"] = stops_point["is_transfer"].fillna(False)
 
 #%% ----------------------------------------------------------------------------
 # get stop spacing
@@ -155,13 +157,14 @@ transfer_buffer.to_file(Path.home()/"Downloads/test2.geojson")
 # so remove these before dissolving the stops
 
 exploded_stops = (
-    stops[stops['stop_id'].isin(transfer_points['stop_id'])==False]
+    # stops[stops['stop_id'].isin(transfer_points['stop_id'])==False]
+    stops
     .dissolve(["rte","dir"])[["geometry"]]
     .explode().reset_index().reset_index()
 )
 
 exploded_stops_w_data = gpd.overlay(
-    stops_point[["stop_id","rte","dir","geometry"]],
+    stops_point[["stop_id","rte","dir","is_transfer","geometry"]],
     exploded_stops,
     how="intersection"
 )
@@ -170,7 +173,7 @@ exploded_stops_w_data = exploded_stops_w_data[
     (exploded_stops_w_data["rte_1"]==exploded_stops_w_data["rte_2"]) &
     (exploded_stops_w_data["dir_1"]==exploded_stops_w_data["dir_2"])
     ]
-
+#%%
 # group it then merge back to exploded stops
 # this gives us the stop ids in the buffer
 exploded_stops = (
@@ -184,8 +187,12 @@ exploded_stops = (
     .set_geometry('geometry')
 )
 
-# get area calc
-exploded_stops["area_ft"] = exploded_stops.area
+# count number of stops within boundary that are transfers
+exploded_stops["transfer_stops"] = exploded_stops["stop_ids"].apply(
+    lambda x: len(
+        set(x).intersection(set(transfer_points["stop_id"].tolist()))
+    )
+)
 
 # stops that are too close will have more than one stop
 route_cols = ["rte","dir","rte_desc","public_rte","frequent","type"]
@@ -196,9 +203,16 @@ too_close = (
 )
 
 # these are the number of stops we could remove
-too_close["stops_to_remove"] = (too_close["num_stops"] / 2).apply(math.floor)
+too_close["stops_to_remove"] = (
+    # can't remove transfer stops
+    (too_close["num_stops"] - too_close["transfer_stops"])
+    # of the remaining remove half of them (round down)
+    / 2).apply(math.floor)
 time_save_sec = 45
 too_close["time_savings_sec"] = too_close["stops_to_remove"] * time_save_sec
+
+# if no stops to remove then filter out
+too_close = too_close[too_close["stops_to_remove"]>0]
 
 #%% save how much time when removing bus stop
 
@@ -222,18 +236,57 @@ route_statistics = (
 route_statistics["time_savings_min"] = (route_statistics["time_savings_sec"] / 60).round(1)
 
 # add to the routes
-routes = routes.merge(route_statistics[["rte","dir","remove_stops","time_savings_min","total_num_stops","mean_num_stops","max_num_stops","min_num_stops"]],on=["rte","dir"])
+routes_og = routes_og.merge(
+    route_statistics[["rte","dir","remove_stops","time_savings_min","total_num_stops","mean_num_stops","max_num_stops","min_num_stops"]],
+    on=["rte","dir"],
+    how='left'
+    )
+
+# routes_og["geometry"] = routes_og["geometry"].line_merge()s
 
 # %% exports
 route_statistics.to_csv(here()/"data/route_statistics.csv",index=False)
-transfer_points.to_crs("epsg:4326").to_file(here()/"data/transfer_points.geojson")
+# transfer_points.to_crs("epsg:4326").to_file(here()/"data/transfer_points.geojson")
 too_close.reset_index().to_crs("epsg:4326").to_file(here()/"data/stops_within_1_16_mile.geojson")
 stops_point.to_crs("epsg:4326").to_file(here()/"data/stops.geojson")
 stops.to_crs("epsg:4326").to_file(here()/"data/stops_buffered.geojson")
-routes.to_crs("epsg:4326").to_file(here()/"data/routes.geojson")
+routes_og.to_crs("epsg:4326").to_file(here()/"data/routes.geojson")
 
 #%%
 center = stops_point.to_crs("epsg:4326").union_all().centroid
 (center.x,center.y)
 
 #%%
+
+# Jenks code
+# use jenks on the impedance reduction
+import mapclassify
+values = stops_point['Total'].dropna()
+classifier = mapclassify.NaturalBreaks(values, k=5)
+bins = classifier.bins
+
+stops_point.loc[stops_point["Total"].isna()==False,"jenks_class"] = classifier.yb
+
+# build legend for maplibre
+legend = []
+lower = float(values.min())
+
+for i, upper in enumerate(classifier.bins):
+
+    legend.append({
+        "min": lower,
+        "max": float(upper),
+        "class": i
+    })
+
+    lower = float(upper)
+
+# if (config['bikewaysim_fp']/'style_jsons').is_dir() == False:
+#     (config['bikewaysim_fp']/'style_jsons').mkdir()
+
+# import json
+# with open(config['bikewaysim_fp']/'style_jsons/origin_weighted_impedance.json',"w") as f:
+#     json.dump(legend,f,indent=2)
+
+
+# %%

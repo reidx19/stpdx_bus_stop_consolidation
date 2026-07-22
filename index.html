@@ -151,6 +151,24 @@ select, button {
   width: 100%;
   margin-bottom: 6px;
 }
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 180px; /* adjust as needed */
+  margin-bottom: 4px;
+}
+
+.dot {
+  height: 10px;
+  width: 10px;
+  background-color: #bbb;
+  border-radius: 50%;
+  display: inline-block;
+}
+
 </style>
 </head>
 
@@ -167,9 +185,10 @@ select, button {
 
   <div class="panel-content scroll-content">
 
-    <h4>
+    <b>
       Wider stop spacing for TriMet can save riders time and reduce operating costs.
-    </h4>
+    </b>
+
     <p style="font-size:14px;color:#555;line-height:1.5;">
       Bus stops in many U.S. cities are commonly spaced every 1/8 mile. While this minimizes walking distance, it also increases total travel time because buses stop more frequently.      
     </p>
@@ -183,8 +202,14 @@ select, button {
         Projected travel time savings are estimated assuming roughly 45 seconds saved per removed stop event.
     </p>
 
+    <b>How to use this map:</b>
+
+    <p style="font-size:14px;color:#555;line-height:1.5;">Click a route on in the routes table or on the map to focus on a route.</p>
+
+    <p style="font-size:14px;color:#555;line-height:1.5;">Click clear filter to bring back all of the routes or refresh the page.</p>
+
       
-    </p>
+    
 
   </div>
 
@@ -240,6 +265,24 @@ select, button {
       Toggle All
     </button>
 
+    <hr>
+
+  <b>Legend</b>
+
+  <div class="legend-item">
+  <span>Accessible Path Exists</span>
+  <span class="dot" style="background-color:#1a9641;"></span>
+  </div>
+
+  <div class="legend-item">
+    <span>No Accessible Path</span>
+    <span class="dot" style="background-color:#ff9100;"></span>
+  </div>
+
+  <div class="legend-item">
+    <span>No Information</span>
+    <span class="dot" style="background-color:#999999;"></span>
+  </div>
   </div>
 
 </div>
@@ -304,7 +347,6 @@ map.on('load', async () => {
   const stops = await fetch('data/stops.geojson').then(r => r.json());
   const stopsBuffered = await fetch('data/stops_buffered.geojson').then(r => r.json());
   const tooClose = await fetch('data/stops_within_1_16_mile.geojson').then(r => r.json());
-  const transfer = await fetch('data/transfer_points.geojson').then(r => r.json());
 
   routesData = routes;
 
@@ -312,7 +354,6 @@ map.on('load', async () => {
   map.addSource('stops', { type:'geojson', data: stops, generateId: true });
   map.addSource('stops_buffered', { type:'geojson', data: stopsBuffered, generateId: true });
   map.addSource('too_close', { type:'geojson', data: tooClose, generateId: true });
-  map.addSource('transfer', { type:'geojson', data: transfer, generateId: true });
 
   // ----------------------------
   // LAYERS
@@ -364,16 +405,36 @@ map.on('load', async () => {
   });
 
   map.addLayer({
-    id:'transfer-layer',
-    type:'circle',
-    source:'transfer',
-    layout:{ visibility:'none' },
-    paint:{
-      'circle-radius':5,
-      'circle-color':'yellow',
-      'circle-stroke-color': "black",
-      'circle-stroke-width': 1
-    }
+  id: 'stops-total-layer',
+  type: 'circle',
+  source: 'stops',
+  layout:{'visibility':'none'},
+  paint: {
+    'circle-radius': [
+      'interpolate',
+        ['linear'],
+        ['to-number', ['get', 'Total']],
+        0, 0,
+        59, 5,
+        175, 10,
+        356, 15,
+        612, 20,
+        984, 25
+    ],
+    'circle-color': [
+      'case',
+      ['==', ['get', 'accessible_path'], 'yes'],
+      '#1a9641',      // green
+
+      ['==', ['get', 'accessible_path'], 'no'],
+      '#ff9100',      // red
+
+      '#999999'       // unknown
+    ],
+    'circle-opacity': 0.8,
+    'circle-stroke-color': 'white',
+    'circle-stroke-width': 1
+  }
   });
 
   map.addLayer({
@@ -385,52 +446,33 @@ map.on('load', async () => {
         'case',
         ['boolean',['feature-state','hover'],false],
         10,
-        5
+        4
       ],
       'circle-color': [
       'case',
+      ['boolean',['feature-state','hover'],false],
+      'yellow', 
       ['==', ['get', 'accessible_path'], 'yes'],
-      '#1a9641',      // green
-
+      '#1a9641',
       ['==', ['get', 'accessible_path'], 'no'],
-      '#ff9100',      // red
-
-      '#999999'       // unknown
+      '#ff9100',
+      '#999999'
       ]
     }
   });
 
   map.addLayer({
-  id: 'stops-total-layer',
-  type: 'circle',
-  source: 'stops',
-  layout:{'visibility':'none'},
-  paint: {
-    'circle-radius': [
-      'case',
-      ['boolean', ['feature-state', 'hover'], false],
-      2,
-      [
-      'interpolate',
-        ['linear'],
-        ['to-number', ['get', 'Total']],
-        0, 5,
-        50, 10,
-        1600, 40
-      ]
-    ],
-    'circle-color': [
-      'case',
-      ['boolean', ['feature-state', 'hover'], false],
-      '#fff000',
-      ['==', ['get', 'Total'], null],
-      '#999999',
-      '#009e59',
-    ],
-    'circle-opacity': 0.8,
-    'circle-stroke-color': 'white',
-    'circle-stroke-width': 1
-  }
+    id:'transfer-layer',
+    type:'circle',
+    source:'stops',
+    layout:{ visibility:'none' },
+    filter: ['==', ['get', 'is_transfer'], 'True'],
+    paint:{
+      'circle-radius':5,
+      'circle-color':'yellow',
+      'circle-stroke-color': "black",
+      'circle-stroke-width': 1
+    }
   });
 
   syncCheckboxes();
@@ -556,7 +598,7 @@ const hoverState = {
   `);
 
   enableHover('stops-total-layer','stops','stops', p => `
-    <b>Layer:</b> Stops with Stats<br>
+    <b>Layer:</b> Stops by Ridership<br>
     <b>Stop ID:</b> ${p.stop_id}<br>
     <b>Name:</b> ${p.stop_name}<br>
     <b>Route:</b> ${p.rte}<br>
@@ -579,6 +621,7 @@ const hoverState = {
     <b>Maximum Potential Time Savings (seconds):</b> ${p.time_savings_sec}<br>
     <b>Stops IDs:</b> ${p.stop_ids}<br>
     <b>Number of Stops:</b> ${p.num_stops}<br>
+    <b>Number of Transfer Stops:</b> ${p.transfer_stops}<br>
   `);
 
   enableHover('transfer-layer','transfer','transfer', p => `
@@ -590,6 +633,13 @@ const hoverState = {
     <b>Number of Transfer Routes:</b> ${p.num_routes_to_transfer_to}<br>
   `);
 
+});
+
+map.on('click', 'routes-layer', (e) => {
+  const f = e.features?.[0];
+  if (!f) return;
+
+  selectRoute(f.properties.rte, f.properties.dir);
 });
 
 // ----------------------------
@@ -718,10 +768,17 @@ function selectRoute(r, dir) {
   map.setFilter('routes-layer', expr);
   map.setFilter('stops-layer', expr);
   map.setFilter('stops-total-layer', expr);
-  map.setFilter('stops-accessible-layer', expr);
   map.setFilter('stops-buffered-layer', expr);
   map.setFilter('too-close-layer', expr);
-  map.setFilter('transfer-layer', expr);
+  map.setFilter(
+    'transfer-layer',
+    [
+    'all', 
+    ['==', ['get', 'is_transfer'], 'True'],
+    ['==', ['to-string', ['get','rte']], String(r)],
+    ['==', ['to-string', ['get','dir']], String(dir)]
+    ]
+  );
 }
 
 // ----------------------------
@@ -804,9 +861,11 @@ function clearFilters() {
   map.setFilter('routes-layer', null);
   map.setFilter('stops-layer', null);
   map.setFilter('stops-total-layer', null);
-  map.setFilter('stops-accessible-layer', null);
   map.setFilter('too-close-layer', null);
-  map.setFilter('transfer-layer', null);
+  map.setFilter(
+    'transfer-layer',
+    ['==', ['get', 'is_transfer'], 'True']
+  );
   
   // reset dropdown if it exists
   const sel = document.getElementById('routeSelect');
