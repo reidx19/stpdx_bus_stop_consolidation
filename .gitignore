@@ -1,3 +1,4 @@
 .DS_Store
 data/Stop Inventory.csv
 data/trimet_passenger_census_weekday.csv
+data/trimet_weekday.csv
